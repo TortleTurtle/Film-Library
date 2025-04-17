@@ -1,5 +1,11 @@
 import {useState} from "react";
-import {Movie, MovieSearchParams, MovieSearchResponse} from "./types/movieApiTypes.ts";
+import {
+    isMovieSearchResponse,
+    isMovieSearchResponseFail,
+    isMovieSearchResponseSuccess,
+    Movie,
+    MovieSearchParams
+} from "./types/movieApiTypes.ts";
 import SearchBar from "./components/SearchBar.tsx";
 
 type SearchResult = {
@@ -16,25 +22,31 @@ function App() {
         try {
             const url = new URL('http://www.omdbapi.com/');
             url.searchParams.set('apikey', import.meta.env.VITE_OMDB_API_KEY);
-            // TODO: We can put this in a loop. Use entries and enum or const to convert field name to the query symbol.
+            // Not very dry. Good enough for now.
             url.searchParams.set("s", searchParams.title);
             if (searchParams.mediaType) url.searchParams.set("type", searchParams.mediaType);
             if (searchParams.year) url.searchParams.set("y", searchParams.year.toString());
             if (searchParams.page) url.searchParams.set("page", searchParams.page.toString());
 
             const res = await fetch(url.toString());
-            const data : MovieSearchResponse = await res.json();
+            const data : unknown = await res.json();
 
-            if (data.Response === "True") {
+            if (!isMovieSearchResponse(data)) {
+                console.error("Response does not match type");
+                return;
+            }
+            if (isMovieSearchResponseSuccess(data)) {
                 const result : SearchResult = {
                     movies: data.Search,
                     totalResults: Number(data.totalResults),
                     searchParams: {...searchParams} // destructring just to be sure.
                 }
                 setSearchResult(result);
-            }
-            if (data.Response === "False") {
+            } else if (isMovieSearchResponseFail(data)) {
                 console.error(data.Error);
+            } else {
+                const _exhaustiveCheck : never = data;
+                return _exhaustiveCheck
             }
         } catch (e) {
             console.error(e);

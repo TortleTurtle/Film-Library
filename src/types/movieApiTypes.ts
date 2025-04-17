@@ -1,5 +1,8 @@
 export const MEDIA_TYPES = ["movie", "series", "episode"] as const;
 export type MediaType = typeof MEDIA_TYPES[number];
+export function isValidMediaType(value: unknown): value is MediaType {
+    return MEDIA_TYPES.includes(value as MediaType);
+}
 
 export interface Movie {
     Title: string,
@@ -24,19 +27,32 @@ export interface MovieSearchParams {
     year?: string
     page?: number
 }
-export function isValidMediaType(value: unknown): value is MediaType {
-    return MEDIA_TYPES.includes(value as MediaType);
-}
 
 //responses
-export type MovieSearchResponse = MovieSearchResponseSuccess | MovieSearchResponseError;
+export type MovieSearchResponse = MovieSearchResponseSuccess | MovieSearchResponseFail;
 
 export interface MovieSearchResponseSuccess {
     Response: "True",
     Search: Movie[],
     totalResults: string
 }
-export interface MovieSearchResponseError {
+export interface MovieSearchResponseFail {
     Response: "False",
     Error: string,
+}
+//Holy shit narrowing wtf.
+export function isMovieSearchResponse(res: unknown): res is MovieSearchResponse {
+    return typeof res === "object" && res !== null && "Response" in res && (res.Response === "True" || res.Response === "False");
+}
+//good enough for now could create something to check if array contains objects that are movies.
+export function isMovieSearchResponseSuccess(searchResponse: MovieSearchResponse): searchResponse is MovieSearchResponseSuccess {
+    return searchResponse.Response === "True" &&
+        "Search" in searchResponse &&
+        "totalResults" in searchResponse &&
+        Array.isArray(searchResponse.Search);
+}
+export function isMovieSearchResponseFail(searchResponse: MovieSearchResponse): searchResponse is MovieSearchResponseFail {
+    return searchResponse.Response === "False" &&
+        "Error" in searchResponse &&
+        typeof searchResponse.Error === "string";
 }
