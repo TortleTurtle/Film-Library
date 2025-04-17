@@ -22,6 +22,7 @@ export interface MovieSearchParams {
     title: string,
     mediaType?: MediaType // Literal union type, must use literal inference.
     year?: string
+    page?: number
 }
 export function isValidMediaType(value: unknown): value is MediaType {
     return MEDIA_TYPES.includes(value as MediaType);

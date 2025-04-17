@@ -1,8 +1,28 @@
 import {isValidMediaType, MovieSearchParams, MEDIA_TYPES} from "../types/movieApiTypes.ts";
+import {ReactElement} from "react";
 
-export default function SearchBar({searchMovies} : {searchMovies: (movieSearchParams : MovieSearchParams) => void}) {
+type SearchBarProps = {
+    searchMovies: (movieSearchParams : MovieSearchParams) => void,
+    totalResults?: number,
+    searchParams?: MovieSearchParams
+}
 
-    //Throwing errors in here as it is a helper function. Messages should be caught via try/catch.
+export default function SearchBar(props: SearchBarProps) {
+
+    const paginationButtons : ReactElement[] = [];
+    if (props.totalResults && props.searchParams) {
+        const {searchParams} = props; //need to do this to narrow it further.
+        const amountOfPages = Math.ceil(props.totalResults / 10);
+        for (let i = 1; i <= amountOfPages; i++) {
+            paginationButtons.push(
+                <button key={i}
+                        onClick={()=> props.searchMovies({...searchParams, page: i})}>
+                    {i}
+                </button>)
+        }
+    }
+
+    // TODO: Graceful error handling, non-valid user input should not throw an error but display an message.
     function getSearchParametersFromFormData(formData : FormData){
         const {title, mediaType, year} = Object.fromEntries(formData.entries());
 
@@ -34,7 +54,7 @@ export default function SearchBar({searchMovies} : {searchMovies: (movieSearchPa
             movieSearchParams.year = year;
         }
 
-        searchMovies(movieSearchParams);
+        props.searchMovies(movieSearchParams);
     }
 
     return (
@@ -58,6 +78,7 @@ export default function SearchBar({searchMovies} : {searchMovies: (movieSearchPa
                 </label>
                 <button type="submit">Search Movie</button>
             </form>
+            {paginationButtons}
         </section>
     )
 }
