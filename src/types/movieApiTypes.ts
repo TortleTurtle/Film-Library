@@ -31,6 +31,7 @@ export interface MovieSearchParams {
 //responses
 export type MovieSearchResponse = MovieSearchResponseSuccess | MovieSearchResponseFail;
 
+//TODO: Search can be multiple types see Media Types.
 export interface MovieSearchResponseSuccess {
     Response: "True",
     Search: Movie[],

@@ -39,4 +39,4 @@ if (isMovieSearchResponseSuccess(data)) {
   const _exhaustiveCheck : never = data;
 }
 ```
-Now if I add a new response type to the union type. TypeScript will let me know I am not handling all options.
+Now if I add a new response type to `MovieSearchResponse`. TypeScript will let me know I am not handling all options.
