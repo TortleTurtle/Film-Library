@@ -1,4 +1,4 @@
-import {Movie} from "../types/movieApiTypes.ts";
+import {Movie} from "../modules/OMDb.ts";
 
 export default function MovieList({movieList}: {movieList: Movie[]}) {
 

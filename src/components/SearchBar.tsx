@@ -1,10 +1,10 @@
-import {isValidMediaType, MovieSearchParams, MEDIA_TYPES} from "../types/movieApiTypes.ts";
+import {isValidMediaType, OMDbSearchParams, MEDIA_TYPES} from "../modules/OMDb.ts";
 import {ReactElement} from "react";
 
 type SearchBarProps = {
-    searchMovies: (movieSearchParams : MovieSearchParams) => void,
+    searchMovies: (movieSearchParams : OMDbSearchParams) => void,
     totalResults?: number,
-    searchParams?: MovieSearchParams
+    searchParams?: OMDbSearchParams
 }
 
 export default function SearchBar(props: SearchBarProps) {
@@ -34,7 +34,7 @@ export default function SearchBar(props: SearchBarProps) {
         if (!isNotEmptyString(title)) {
             throw new Error("Title is required and must be a non-empty string");
         }
-        const movieSearchParams : MovieSearchParams = {
+        const movieSearchParams : OMDbSearchParams = {
             title: title,
         }
 

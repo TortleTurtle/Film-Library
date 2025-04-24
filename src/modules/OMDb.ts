@@ -21,7 +21,7 @@ export interface MovieDetail extends Movie {
 }
 
 //For building search query
-export interface MovieSearchParams {
+export interface OMDbSearchParams {
     title: string,
     mediaType?: MediaType // Literal union type, must use literal inference.
     year?: string
@@ -29,31 +29,55 @@ export interface MovieSearchParams {
 }
 
 //responses
-export type MovieSearchResponse = MovieSearchResponseSuccess | MovieSearchResponseFail;
+export type OMDbSearchResponse = OMBbSearchSuccess | OMDbSearchFail;
 
-//TODO: Search can be multiple types see Media Types.
-export interface MovieSearchResponseSuccess {
+//TODO: Search can be multiple modules see Media Types.
+export interface OMBbSearchSuccess {
     Response: "True",
     Search: Movie[],
     totalResults: string
 }
-export interface MovieSearchResponseFail {
+export interface OMDbSearchFail {
     Response: "False",
     Error: string,
 }
 //Holy shit narrowing wtf.
-export function isMovieSearchResponse(res: unknown): res is MovieSearchResponse {
+export function isOMDbSearchResponse(res: unknown): res is OMDbSearchResponse {
     return typeof res === "object" && res !== null && "Response" in res && (res.Response === "True" || res.Response === "False");
 }
 //good enough for now could create something to check if array contains objects that are movies.
-export function isMovieSearchResponseSuccess(searchResponse: MovieSearchResponse): searchResponse is MovieSearchResponseSuccess {
+export function isOMDbSearchSuccess(searchResponse: OMDbSearchResponse): searchResponse is OMBbSearchSuccess {
     return searchResponse.Response === "True" &&
         "Search" in searchResponse &&
         "totalResults" in searchResponse &&
         Array.isArray(searchResponse.Search);
 }
-export function isMovieSearchResponseFail(searchResponse: MovieSearchResponse): searchResponse is MovieSearchResponseFail {
+export function isOMDbSearchFail(searchResponse: OMDbSearchResponse): searchResponse is OMDbSearchFail {
     return searchResponse.Response === "False" &&
         "Error" in searchResponse &&
         typeof searchResponse.Error === "string";
+}
+export function validateOMDbSearchResponse<R>(
+    data: unknown,
+    handlers: {
+        onSuccess: (value : OMBbSearchSuccess) => R,
+        onFail: (value : OMDbSearchFail) => R
+        onInvalid?: (data: unknown) => R,
+}) : R | void {
+    if (!isOMDbSearchResponse(data)) {
+        if (handlers.onInvalid) return handlers.onInvalid(data);
+        return defaultOnInvalid(data);
+    } else if (isOMDbSearchFail(data)) {
+        console.error(data.Error);
+        return handlers.onFail(data);
+    } else if (isOMDbSearchSuccess(data)) {
+        return handlers.onSuccess(data);
+    } else {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const neverData : never = data;
+        return defaultOnInvalid(data);
+    }
+}
+const defaultOnInvalid = (data: unknown) => {
+    console.error("Unexpected OMDb response", data);
 }
