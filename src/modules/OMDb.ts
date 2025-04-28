@@ -29,10 +29,10 @@ export interface OMDbSearchParams {
 }
 
 //responses
-export type OMDbSearchResponse = OMBbSearchSuccess | OMDbSearchFail;
+export type OMDbSearchResponse = OMDbSearchSuccess | OMDbSearchFail;
 
 //TODO: Search can be multiple modules see Media Types.
-export interface OMBbSearchSuccess {
+export interface OMDbSearchSuccess {
     Response: "True",
     Search: Movie[],
     totalResults: string
@@ -46,7 +46,7 @@ export function isOMDbSearchResponse(res: unknown): res is OMDbSearchResponse {
     return typeof res === "object" && res !== null && "Response" in res && (res.Response === "True" || res.Response === "False");
 }
 //good enough for now could create something to check if array contains objects that are movies.
-export function isOMDbSearchSuccess(searchResponse: OMDbSearchResponse): searchResponse is OMBbSearchSuccess {
+export function isOMDbSearchSuccess(searchResponse: OMDbSearchResponse): searchResponse is OMDbSearchSuccess {
     return searchResponse.Response === "True" &&
         "Search" in searchResponse &&
         "totalResults" in searchResponse &&
@@ -60,7 +60,7 @@ export function isOMDbSearchFail(searchResponse: OMDbSearchResponse): searchResp
 export function validateOMDbSearchResponse<R>(
     data: unknown,
     handlers: {
-        onSuccess: (value : OMBbSearchSuccess) => R,
+        onSuccess: (value: OMDbSearchSuccess) => R,
         onFail: (value : OMDbSearchFail) => R
         onInvalid?: (data: unknown) => R,
 }) : R | void {
@@ -80,4 +80,32 @@ export function validateOMDbSearchResponse<R>(
 }
 const defaultOnInvalid = (data: unknown) => {
     console.error("Unexpected OMDb response", data);
+}
+
+export function createSearchQuery(searchParams: OMDbSearchParams) {
+    const url = new URL('https://www.omdbapi.com/');
+    url.searchParams.set('apikey', import.meta.env.VITE_OMDB_API_KEY);
+    // Not very dry. Good enough for now.
+    url.searchParams.set("s", searchParams.title);
+    if (searchParams.mediaType) url.searchParams.set("type", searchParams.mediaType);
+    if (searchParams.year) url.searchParams.set("y", searchParams.year.toString());
+    if (searchParams.page) url.searchParams.set("page", searchParams.page.toString());
+    return url.toString();
+}
+
+export function buildRequestPagesBundles(searchParams: OMDbSearchParams, amountOfPages: number) {
+    //Limit requests if we are developing.
+    const maxPages = import.meta.env.MODE === "development" && amountOfPages > 10 ? 10 : amountOfPages;
+
+    const bundles: Promise<Response>[][] = [[]];
+    //starting at 2 because we already have the first page
+    const bundleIndex = bundles.length > 0 ? bundles.length - 1 : 0;
+    for (let pageNumber = 2; pageNumber <= maxPages; pageNumber++) {
+        console.log(bundleIndex);
+        if (pageNumber % 5 === 0) bundles.push([]);
+        bundles[bundleIndex].push(
+            fetch(createSearchQuery({...searchParams, page: pageNumber}))
+        )
+    }
+    return bundles;
 }

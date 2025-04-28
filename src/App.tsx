@@ -1,14 +1,16 @@
 import {useState} from "react";
 import {
-    isOMDbSearchResponse,
-    isOMDbSearchFail,
-    isOMDbSearchSuccess,
+    buildRequestPagesBundles,
+    createSearchQuery,
     Movie,
-    OMDbSearchParams, OMDbSearchFail, OMBbSearchSuccess, validateOMDbSearchResponse
+    OMDbSearchFail,
+    OMDbSearchParams,
+    OMDbSearchSuccess,
+    validateOMDbSearchResponse
 } from "./modules/OMDb.ts";
 import SearchBar from "./components/SearchBar.tsx";
 import MovieList from "./components/MovieList.tsx";
-import {buildRequestPagesBundles, createSearchQuery, matchSettled} from "./modules/utils.ts";
+import {matchSettled} from "./modules/utils.ts";
 
 type SearchResult = {
     movies: Movie[],
@@ -29,7 +31,7 @@ function App() {
                 //TODO: User message.
                 console.log("Search failed:", data.Error);
             }
-            const onSuccess = (data: OMBbSearchSuccess)=> {
+            const onSuccess = (data: OMDbSearchSuccess) => {
                 setSearchResult({
                     movies: data.Search,
                     totalResults: Number(data.totalResults),
@@ -60,7 +62,7 @@ function App() {
                 //TODO: Show User message.
                 console.error("Search failed:", data.Error);
             }
-            const onSuccess = async (data: OMBbSearchSuccess)=> {
+            const onSuccess = async (data: OMDbSearchSuccess) => {
                 const amountOfPages = Math.ceil(Number(data.totalResults) / 10);
                 const requestPagesBundles = buildRequestPagesBundles(searchParams, amountOfPages)
 
@@ -87,16 +89,21 @@ function App() {
     }
 
     async function fetchAndParseAllPages(requestBundles: Promise<Response>[][]): Promise<Movie[]> {
+        const movies: Movie[] = [];
         for (const bundle of requestBundles){
             const settledPromises = await Promise.allSettled(bundle);
             const jsonPromises : Promise<unknown>[] = [];
 
-            //validate responses
+            //Response handling
             for (const promise of settledPromises){
                 const onFulfilled = (response: Response) => {
-                    if (response.ok) jsonPromises.push(response.json());
+                    if (!response.ok) {
                     //TODO: Handle not ok response
                     console.error("Response not ok", response);
+                        return;
+                    }
+
+                    jsonPromises.push(response.json());
                 }
                 const onRejected = (reason: string) => {
                     console.error(`Fetch promise rejected: ${reason}`);
@@ -108,19 +115,23 @@ function App() {
                 });
             }
 
-            //parse json
+            //Parsing & validating
             const settledJsonPromises = await Promise.allSettled(jsonPromises);
             for (const promise of settledJsonPromises){
-
                 const onFulfilled = (data: unknown) => {
                     const onFail = async (data: OMDbSearchFail) => {
                         //TODO: Handle error, retry?
                         console.error("Page Search failed:", data.Error);
                     }
-                    const onSuccess = ()=> {
-                        //TODO: validate OMDbResponse.
-                        //Parse
+                    const onSuccess = (data: OMDbSearchSuccess) => {
+                        movies.push(...data.Search);
                     }
+
+                    //TODO: validate OMDbResponse.
+                    validateOMDbSearchResponse(data, {
+                        onFail: onFail,
+                        onSuccess: onSuccess
+                    });
                 }
                 const onRejected = (reason: string) => {
                     console.error(`JSON promise rejected: ${reason}`);
@@ -130,41 +141,6 @@ function App() {
                     onFulfilled: onFulfilled,
                     onRejected: onRejected
                 });
-
-                //TODO: Guards for MovieSearchResponses.
-                const data = (promise as PromiseFulfilledResult<unknown>).value
-                if (!isOMDbSearchResponse(data)) {
-                    //TODO: retry
-                } else if (isOMDbSearchFail(data)){
-                    //TODO: retry
-                } else if (isOMDbSearchSuccess(data)) {
-
-                } else {
-                    console.error("unknown MovieSearchResponse", promise);
-                }
-            }
-        }
-
-        //concat all movies together. We could do this async as well.
-        let movies: Movie[] = [];
-        for (let resultIndex = 0; resultIndex < results.length; resultIndex++) {
-            const data : unknown = await results[resultIndex].json();
-
-            /* TODO: Retry failed responses
-            *   - validate response status (200)
-            *   - retry if 500 code.
-            *   - if 403 or 404 code show error message.
-             */
-            if (!isOMDbSearchResponse(data)) {
-                throw new Error(`Response for page ${resultIndex + 1} does not match type`);
-            } else if (isOMDbSearchFail(data)) {
-
-                throw new Error(`Page ${resultIndex + 1} failed: ${data.Error}`);
-            }
-            else if (isOMDbSearchSuccess(data)) {
-                movies = [...movies, ...data.Search];
-            } else {
-                throw new Error(`Unexpected movie search response for page ${resultIndex + 1}`)
             }
         }
         return movies;
