@@ -101,7 +101,6 @@ export function buildRequestPagesBundles(searchParams: OMDbSearchParams, amountO
     //starting at 2 because we already have the first page
     const bundleIndex = bundles.length > 0 ? bundles.length - 1 : 0;
     for (let pageNumber = 2; pageNumber <= maxPages; pageNumber++) {
-        console.log(bundleIndex);
         if (pageNumber % 5 === 0) bundles.push([]);
         bundles[bundleIndex].push(
             fetch(createSearchQuery({...searchParams, page: pageNumber}))
