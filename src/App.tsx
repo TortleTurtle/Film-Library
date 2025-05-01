@@ -100,9 +100,10 @@ function App() {
                 console.error("Response not ok", response);
                 return;
             }
-            response.json().then(validateResult);
+            validateResult(response.json());
         }
-        const validateResult = (data: unknown) => {
+        const validateResult = async (jsonPromise: Promise<unknown>) => {
+            const data = await jsonPromise;
             validateOMDbSearchResponse(data, {
                 onSuccess: sortAndPush,
                 onFail: logError
