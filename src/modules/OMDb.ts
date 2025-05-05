@@ -1,9 +1,10 @@
 export const MEDIA_TYPES = ["movie", "series", "episode"] as const;
 export type MediaType = typeof MEDIA_TYPES[number];
-export function isValidMediaType(value: unknown): value is MediaType {
+export function isMediaType(value: unknown): value is MediaType {
     return MEDIA_TYPES.includes(value as MediaType);
 }
 
+//TODO: Add Series and Episode
 export interface Movie {
     Title: string,
     Type: MediaType, //abstract this out
@@ -20,18 +21,25 @@ export interface MovieDetail extends Movie {
     Rating: number,
 }
 
+export const SORT_BY = ["title", "year"] as const;
+export type SortBy = typeof SORT_BY[number];
+export function isSortBy(value: unknown): value is SortBy {
+    return SORT_BY.includes(value as SortBy);
+}
+
 //For building search query
 export interface OMDbSearchParams {
     title: string,
-    mediaType?: MediaType // Literal union type, must use literal inference.
-    year?: string
-    page?: number
+    mediaType?: MediaType, // Literal union type, must use literal inference.
+    year?: string,
+    page?: number,
+    sortBy?: SortBy,
+    order: "asc" | "desc"
 }
 
 //responses
 export type OMDbSearchResponse = OMDbSearchSuccess | OMDbSearchFail;
 
-//TODO: Search can be multiple modules see Media Types.
 export interface OMDbSearchSuccess {
     Response: "True",
     Search: Movie[],

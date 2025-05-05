@@ -24,26 +24,29 @@ function App() {
     const [searchResult, setSearchResult] = useState<SearchResult>();
 
     async function searchMovie(searchParams : OMDbSearchParams) {
-        console.log("searching Movies");
         try {
+            //TODO: Add response validation
             const res = await fetch(createSearchQuery(searchParams));
             const data : unknown = await res.json();
 
             const onFail = (data: OMDbSearchFail) => {
-                //TODO: User message.
                 console.log("Search failed:", data.Error);
             }
             const onSuccess = (data: OMDbSearchSuccess) => {
-                setSearchResult({
-                    movies: data.Search,
-                    totalResults: Number(data.totalResults),
-                    searchParams: searchParams,
-                })
+                if (searchParams.sortBy) {
+                    advancedMovieSearch(data ,searchParams);
+                } else {
+                    setSearchResult({
+                        movies: data.Search,
+                        totalResults: Number(data.totalResults),
+                        searchParams: searchParams,
+                    })
+                }
             }
 
             validateOMDbSearchResponse(data, {
-                onFail: onFail,
-                onSuccess: onSuccess,
+                onFail,
+                onSuccess,
             })
         } catch (e) {
             console.error(e);
@@ -55,44 +58,14 @@ function App() {
     *   - Sort by type
     *   - Sort alphabetical.
     */
-    async function advancedMovieSearch(searchParams : OMDbSearchParams) {
-        try {
-            const response = await fetch(createSearchQuery(searchParams));
-            const data : unknown = await response.json();
-
-            const onFail = async (data: OMDbSearchFail) => {
-                //TODO: Show User message.
-                console.error("Search failed:", data.Error);
-            }
-            const onSuccess = async (data: OMDbSearchSuccess) => {
-                const amountOfPages = Math.ceil(Number(data.totalResults) / 10);
-                const requestPagesBundles = buildRequestPagesBundles(searchParams, amountOfPages)
-
-                const movies = await fetchAndParseAllPages(requestPagesBundles);
-                const result : SearchResult = {
-                    movies: [...data.Search, ...movies],
-                    searchParams: {...searchParams},
-                    totalResults: Number(data.totalResults),
-                }
-                /* TODO: AdvancedSearchResult type?
-                *   - Know if internal pagination or external through api.
-                */
-                setSearchResult(result);
-            }
-
-
-            validateOMDbSearchResponse(data, {
-                onSuccess: onSuccess,
-                onFail: onFail
-            })
+    async function advancedMovieSearch(firstResult : OMDbSearchSuccess, searchParams : OMDbSearchParams) {
+        const amountOfPages = Math.ceil(Number(firstResult.totalResults) / 10);
+        const requestBundles = buildRequestPagesBundles(searchParams, amountOfPages)
+        const searchResult : SearchResult = {
+            movies: [...firstResult.Search],
+            searchParams: {...searchParams},
+            totalResults: Number(firstResult.totalResults),
         }
-        catch (e) {
-            console.error(e);
-        }
-    }
-
-    async function fetchAndParseAllPages(requestBundles: Promise<Response>[][]): Promise<Movie[]> {
-        const movies: Movie[] = [];
 
         const validateResponse = (response: Response) => {
             if (!response.ok) {
@@ -111,7 +84,15 @@ function App() {
         }
         const sortAndPush = (result: OMDbSearchSuccess) => {
             //sort
-            movies.push(...result.Search);
+            searchResult.movies.push(...result.Search);
+            searchResult.movies.sort((a,b) => {
+                const titleA = a.Title.toUpperCase();
+                const titleB = b.Title.toUpperCase();
+                if (titleA < titleB) return -1;
+                if (titleA > titleB) return 1;
+                return 0;
+            });
+            setSearchResult(searchResult);
         }
         const logError = (error: string | OMDbSearchFail) => {
             if (typeof error === "string") {
@@ -132,12 +113,11 @@ function App() {
                 });
             }
         }
-        return movies;
     }
 
   return (<main>
       <h1>Search Movie</h1>
-      <SearchBar searchMovies={advancedMovieSearch}
+      <SearchBar searchMovies={searchMovie}
                  totalResults={searchResult && searchResult.totalResults}
                  searchParams={searchResult && searchResult.searchParams} />
       {(searchResult && searchResult.movies.length > 0) && <MovieList movieList={searchResult.movies}/>}
