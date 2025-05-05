@@ -1,4 +1,10 @@
-import {isMediaType, OMDbSearchParams, MEDIA_TYPES, SORT_BY, isSortBy} from "../modules/OMDb.ts";
+import {
+    isMediaType,
+    OMDbSearchParams,
+    MEDIA_TYPES,
+    SORT_CATEGORIES,
+    isSortCategory
+} from "../modules/OMDb.ts";
 import {ReactElement} from "react";
 
 type SearchBarProps = {
@@ -36,7 +42,7 @@ export default function SearchBar(props: SearchBarProps) {
         }
         const movieSearchParams : OMDbSearchParams = {
             title: formObject.title,
-            order: "asc"
+            sortDirection: "asc"
         }
         if (isNotEmptyString(formObject.mediaType)) {
             const parsedMediaType = formObject.mediaType.toLowerCase();
@@ -53,11 +59,11 @@ export default function SearchBar(props: SearchBarProps) {
             movieSearchParams.year = formObject.year;
         }
 
-        if (isNotEmptyString(formObject.sortBy) && isSortBy(formObject.sortBy)) {
-            movieSearchParams.sortBy = formObject.sortBy;
+        if (isNotEmptyString(formObject.sortCategory) && isSortCategory(formObject.sortCategory)) {
+            movieSearchParams.sortCategory = formObject.sortCategory;
         }
-        if (isNotEmptyString(formObject.order) && (formObject.order === "asc" || formObject.order === "desc")) {
-            movieSearchParams.order = formObject.order;
+        if (isNotEmptyString(formObject.sortDirection) && (formObject.sortDirection === "asc" || formObject.sortDirection === "desc")) {
+            movieSearchParams.sortDirection = formObject.sortDirection;
         }
 
         props.searchMovies(movieSearchParams);
@@ -87,15 +93,15 @@ export default function SearchBar(props: SearchBarProps) {
                 </fieldset>
                 <fieldset>
                     <legend>Advanced Search</legend>
-                    <label htmlFor="sortBy">Sort by:</label>
-                    <select id="sortBy" name="sortBy" defaultValue="">
+                    <label htmlFor="sortCategory">Sort by:</label>
+                    <select id="sortCategory" name="sortCategory" defaultValue="">
                         <option value="">None</option>
-                        {SORT_BY.map(value =>
+                        {SORT_CATEGORIES.map(value =>
                             <option key={value} value={value}>{value.charAt(0).toUpperCase() + value.slice(1)}</option>
                         )}
                     </select>
-                    <label htmlFor="order">Order by:</label>
-                    <select id="order" name="order" defaultValue="asc">
+                    <label htmlFor="sortDirection">Direction:</label>
+                    <select id="sortDirection" name="sortDirection" defaultValue="asc">
                         <option value="asc">Ascending</option>
                         <option value="desc">Descending</option>
                     </select>

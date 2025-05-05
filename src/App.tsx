@@ -7,7 +7,7 @@ import {
     Movie,
     OMDbSearchFail,
     OMDbSearchParams,
-    OMDbSearchSuccess,
+    OMDbSearchSuccess, SortCategory, SortDirection, sortFunctions,
     validateOMDbSearchResponse
 } from "./modules/OMDb.ts";
 import SearchBar from "./components/SearchBar.tsx";
@@ -33,8 +33,8 @@ function App() {
                 console.log("Search failed:", data.Error);
             }
             const onSuccess = (data: OMDbSearchSuccess) => {
-                if (searchParams.sortBy) {
-                    advancedMovieSearch(data ,searchParams);
+                if (searchParams.sortCategory) {
+                    advancedMovieSearch(data, searchParams, searchParams.sortCategory, searchParams.sortDirection);
                 } else {
                     setSearchResult({
                         movies: data.Search,
@@ -58,7 +58,7 @@ function App() {
     *   - Sort by type
     *   - Sort alphabetical.
     */
-    async function advancedMovieSearch(firstResult : OMDbSearchSuccess, searchParams : OMDbSearchParams) {
+    async function advancedMovieSearch(firstResult : OMDbSearchSuccess, searchParams : OMDbSearchParams, sortCategory: SortCategory, sortDirection: SortDirection) {
         const amountOfPages = Math.ceil(Number(firstResult.totalResults) / 10);
         const requestBundles = buildRequestPagesBundles(searchParams, amountOfPages)
         const searchResult : SearchResult = {
@@ -85,13 +85,7 @@ function App() {
         const sortAndPush = (result: OMDbSearchSuccess) => {
             //sort
             searchResult.movies.push(...result.Search);
-            searchResult.movies.sort((a,b) => {
-                const titleA = a.Title.toUpperCase();
-                const titleB = b.Title.toUpperCase();
-                if (titleA < titleB) return -1;
-                if (titleA > titleB) return 1;
-                return 0;
-            });
+            searchResult.movies.sort(sortFunctions[sortCategory][sortDirection]);
             setSearchResult(searchResult);
         }
         const logError = (error: string | OMDbSearchFail) => {

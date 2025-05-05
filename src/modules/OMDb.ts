@@ -21,20 +21,50 @@ export interface MovieDetail extends Movie {
     Rating: number,
 }
 
-export const SORT_BY = ["title", "year"] as const;
-export type SortBy = typeof SORT_BY[number];
-export function isSortBy(value: unknown): value is SortBy {
-    return SORT_BY.includes(value as SortBy);
+export const sortFunctions = {
+    title: {
+        asc: function (a: Movie, b: Movie){
+            const titleA = a.Title.toUpperCase();
+            const titleB = b.Title.toUpperCase();
+            if (titleA < titleB) return -1;
+            if (titleA > titleB) return 1;
+            return 0;
+        },
+        desc: function (a: Movie, b: Movie){
+            const titleA = a.Title.toUpperCase();
+            const titleB = b.Title.toUpperCase();
+            if (titleA > titleB) return -1;
+            if (titleA < titleB) return 1;
+            return 0;
+        }
+    },
+    year: {
+        asc: function (a: Movie, b: Movie){
+            return Number(a.Year) - Number(b.Year);
+        },
+        desc: function (a: Movie, b: Movie){
+            return Number(b.Year) - Number(a.Year);
+        }
+    }
+} as const;
+
+
+export type SortCategory = keyof typeof sortFunctions;
+export const SORT_CATEGORIES = Object.keys(sortFunctions) as SortCategory[];
+export function isSortCategory(value: string): value is SortCategory {
+    return SORT_CATEGORIES.includes(value as SortCategory);
 }
+
+export type SortDirection = "asc" | "desc";
 
 //For building search query
 export interface OMDbSearchParams {
     title: string,
-    mediaType?: MediaType, // Literal union type, must use literal inference.
+    mediaType?: MediaType,
     year?: string,
     page?: number,
-    sortBy?: SortBy,
-    order: "asc" | "desc"
+    sortCategory?: SortCategory,
+    sortDirection: SortDirection,
 }
 
 //responses
@@ -93,7 +123,6 @@ const defaultOnInvalid = (data: unknown) => {
 export function createSearchQuery(searchParams: OMDbSearchParams) {
     const url = new URL('https://www.omdbapi.com/');
     url.searchParams.set('apikey', import.meta.env.VITE_OMDB_API_KEY);
-    // Not very dry. Good enough for now.
     url.searchParams.set("s", searchParams.title);
     if (searchParams.mediaType) url.searchParams.set("type", searchParams.mediaType);
     if (searchParams.year) url.searchParams.set("y", searchParams.year.toString());
