@@ -53,11 +53,6 @@ function App() {
         }
     }
 
-    /* TODO: Improve search
-    *   - Sort by year
-    *   - Sort by type
-    *   - Sort alphabetical.
-    */
     async function advancedMovieSearch(firstResult : OMDbSearchSuccess, searchParams : OMDbSearchParams, sortCategory: SortCategory, sortDirection: SortDirection) {
         const amountOfPages = Math.ceil(Number(firstResult.totalResults) / 10);
         const requestBundles = buildRequestPagesBundles(searchParams, amountOfPages)
@@ -111,9 +106,13 @@ function App() {
 
   return (<main>
       <h1>Search Movie</h1>
-      <SearchBar searchMovies={searchMovie}
-                 totalResults={searchResult && searchResult.totalResults}
-                 searchParams={searchResult && searchResult.searchParams} />
+      {searchResult ?
+          <SearchBar searchMovies={searchMovie}
+                     totalResults={searchResult.totalResults}
+                     searchParams={searchResult.searchParams} />
+          :
+          <SearchBar searchMovies={searchMovie}/>
+      }
       {(searchResult && searchResult.movies.length > 0) && <MovieList movieList={searchResult.movies}/>}
   </main>)
 }

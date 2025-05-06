@@ -7,7 +7,7 @@ export function isMediaType(value: unknown): value is MediaType {
 //TODO: Add Series and Episode
 export interface Movie {
     Title: string,
-    Type: MediaType, //abstract this out
+    Type: MediaType,
     Poster: string,
     Year: string,
     imdbID: string
@@ -23,14 +23,14 @@ export interface MovieDetail extends Movie {
 
 export const sortFunctions = {
     title: {
-        asc: function (a: Movie, b: Movie){
+        ascending: function (a: Movie, b: Movie){
             const titleA = a.Title.toUpperCase();
             const titleB = b.Title.toUpperCase();
             if (titleA < titleB) return -1;
             if (titleA > titleB) return 1;
             return 0;
         },
-        desc: function (a: Movie, b: Movie){
+        descending: function (a: Movie, b: Movie){
             const titleA = a.Title.toUpperCase();
             const titleB = b.Title.toUpperCase();
             if (titleA > titleB) return -1;
@@ -39,23 +39,25 @@ export const sortFunctions = {
         }
     },
     year: {
-        asc: function (a: Movie, b: Movie){
+        ascending: function (a: Movie, b: Movie){
             return Number(a.Year) - Number(b.Year);
         },
-        desc: function (a: Movie, b: Movie){
+        descending: function (a: Movie, b: Movie){
             return Number(b.Year) - Number(a.Year);
         }
     }
 } as const;
-
 
 export type SortCategory = keyof typeof sortFunctions;
 export const SORT_CATEGORIES = Object.keys(sortFunctions) as SortCategory[];
 export function isSortCategory(value: string): value is SortCategory {
     return SORT_CATEGORIES.includes(value as SortCategory);
 }
-
-export type SortDirection = "asc" | "desc";
+export const SORT_DIRECTIONS = ["ascending", "descending"] as const;
+export type SortDirection = typeof SORT_DIRECTIONS[number];
+export function isSortDirection(value: string): value is SortDirection {
+    return SORT_DIRECTIONS.includes(value as SortDirection);
+}
 
 //For building search query
 export interface OMDbSearchParams {

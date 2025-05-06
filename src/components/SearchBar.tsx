@@ -3,7 +3,7 @@ import {
     OMDbSearchParams,
     MEDIA_TYPES,
     SORT_CATEGORIES,
-    isSortCategory
+    isSortCategory, SORT_DIRECTIONS, isSortDirection
 } from "../modules/OMDb.ts";
 import {ReactElement} from "react";
 
@@ -14,7 +14,6 @@ type SearchBarProps = {
 }
 
 export default function SearchBar(props: SearchBarProps) {
-
     const paginationButtons : ReactElement[] = [];
     if (props.totalResults && props.searchParams) {
         const {searchParams} = props; //need to do this to narrow it further.
@@ -26,6 +25,20 @@ export default function SearchBar(props: SearchBarProps) {
                     {i}
                 </button>)
         }
+    }
+
+    const getSearchParamFromProps = (paramKey : keyof OMDbSearchParams) => {
+        const param = props.searchParams && props.searchParams[paramKey] ? props.searchParams[paramKey] : "";
+        console.log(`${paramKey} : ${param}`);
+        return param;
+    }
+    const renderSelectOptions = (paramKey : "mediaType" | "sortCategory" | "sortDirection", values : readonly string[]) => {
+        return values.map(value => {
+            if (value === getSearchParamFromProps(paramKey)) {
+                return (<option key={value} value={value} selected>{value.charAt(0).toUpperCase() + value.slice(1)}</option>)
+            }
+            return <option key={value} value={value}>{value.charAt(0).toUpperCase() + value.slice(1)}</option>
+        });
     }
 
     // TODO: Graceful error handling, non-valid user input should not throw an error but display an message.
@@ -42,13 +55,12 @@ export default function SearchBar(props: SearchBarProps) {
         }
         const movieSearchParams : OMDbSearchParams = {
             title: formObject.title,
-            sortDirection: "asc"
+            sortDirection: "ascending"
         }
         if (isNotEmptyString(formObject.mediaType)) {
-            const parsedMediaType = formObject.mediaType.toLowerCase();
-            if (!isMediaType(parsedMediaType)) throw new Error("Please select an option \"movie\", \"series\" or \"episode\"");
+            if (!isMediaType(formObject.mediaType)) throw new Error("Please select an option \"movie\", \"series\" or \"episode\"");
 
-            movieSearchParams.mediaType = parsedMediaType;
+            movieSearchParams.mediaType = formObject.mediaType;
         }
         if (isNotEmptyString(formObject.year)) {
             const yearAsNumber = Number(formObject.year);
@@ -62,7 +74,7 @@ export default function SearchBar(props: SearchBarProps) {
         if (isNotEmptyString(formObject.sortCategory) && isSortCategory(formObject.sortCategory)) {
             movieSearchParams.sortCategory = formObject.sortCategory;
         }
-        if (isNotEmptyString(formObject.sortDirection) && (formObject.sortDirection === "asc" || formObject.sortDirection === "desc")) {
+        if (isNotEmptyString(formObject.sortDirection) && isSortDirection(formObject.sortDirection)) {
             movieSearchParams.sortDirection = formObject.sortDirection;
         }
 
@@ -76,34 +88,29 @@ export default function SearchBar(props: SearchBarProps) {
                     <legend>Basic search:</legend>
                     <label htmlFor="title">
                         Title
-                        <input id="title" name="title" type="text" defaultValue="Batman"/>
+                        <input id="title" name="title" type="text" defaultValue={getSearchParamFromProps("title")}/>
                     </label>
-                    <label htmlFor="type">
-                        <select id="type" name="type" defaultValue="">
+                    <label htmlFor="mediaType">
+                        <select id="mediaType" name="mediaType" defaultValue={getSearchParamFromProps("mediaType")}>
                             <option disabled value="">Select type</option>
-                            {MEDIA_TYPES.map(type =>
-                                <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
-                            )}
+                            {renderSelectOptions("mediaType", MEDIA_TYPES)}
                         </select>
                     </label>
                     <label htmlFor="year">
                         Year
-                        <input id="year" placeholder="ex: 2012" name="year" type="string"/>
+                        <input id="year" name="year" type="string" defaultValue={getSearchParamFromProps("year")} placeholder="ex: 2012"/>
                     </label>
                 </fieldset>
                 <fieldset>
                     <legend>Advanced Search</legend>
                     <label htmlFor="sortCategory">Sort by:</label>
-                    <select id="sortCategory" name="sortCategory" defaultValue="">
+                    <select id="sortCategory" name="sortCategory" defaultValue={getSearchParamFromProps("sortCategory")}>
                         <option value="">None</option>
-                        {SORT_CATEGORIES.map(value =>
-                            <option key={value} value={value}>{value.charAt(0).toUpperCase() + value.slice(1)}</option>
-                        )}
+                        {renderSelectOptions("sortCategory", SORT_CATEGORIES)}
                     </select>
                     <label htmlFor="sortDirection">Direction:</label>
-                    <select id="sortDirection" name="sortDirection" defaultValue="asc">
-                        <option value="asc">Ascending</option>
-                        <option value="desc">Descending</option>
+                    <select id="sortDirection" name="sortDirection" defaultValue={getSearchParamFromProps("sortDirection")}>
+                        {renderSelectOptions("sortDirection", SORT_DIRECTIONS)}
                     </select>
                 </fieldset>
                 <button type="submit">Search Movie</button>
