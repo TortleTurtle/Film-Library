@@ -23,7 +23,8 @@ type SearchResult = {
 function App() {
     const [searchResult, setSearchResult] = useState<SearchResult>();
 
-    async function searchMovie(searchParams : OMDbSearchParams) {
+    //Searching
+    async function search(searchParams : OMDbSearchParams) {
         try {
             //TODO: Add response validation
             const res = await fetch(createSearchQuery(searchParams));
@@ -34,12 +35,12 @@ function App() {
             }
             const onSuccess = (data: OMDbSearchSuccess) => {
                 if (searchParams.sortCategory) {
-                    advancedMovieSearch(data, searchParams, searchParams.sortCategory, searchParams.sortDirection);
+                    advancedSearch(data, searchParams, searchParams.sortCategory, searchParams.sortDirection);
                 } else {
                     setSearchResult({
                         movies: data.Search,
                         totalResults: Number(data.totalResults),
-                        searchParams: searchParams,
+                        searchParams: {...searchParams},
                     })
                 }
             }
@@ -52,8 +53,7 @@ function App() {
             console.error(e);
         }
     }
-
-    async function advancedMovieSearch(firstResult : OMDbSearchSuccess, searchParams : OMDbSearchParams, sortCategory: SortCategory, sortDirection: SortDirection) {
+    async function advancedSearch(firstResult : OMDbSearchSuccess, searchParams : OMDbSearchParams, sortCategory: SortCategory, sortDirection: SortDirection) {
         const amountOfPages = Math.ceil(Number(firstResult.totalResults) / 10);
         const requestBundles = buildRequestPagesBundles(searchParams, amountOfPages)
         const searchResult : SearchResult = {
@@ -104,16 +104,47 @@ function App() {
         }
     }
 
+    //Pagination
+    const setPage = (page : number) : void => {
+        if (searchResult!.searchParams.sortCategory) {
+            setSearchResult(prevState => {
+                return {
+                    ...prevState!,
+                    searchParams: {
+                        ...prevState!.searchParams,
+                        page: page
+                    }
+                }
+            })
+        } else {
+            search({...searchResult!.searchParams, page: page})
+        }
+    }
+    const getMoviesToDisplay = () => {
+        if (!searchResult) return [];
+
+        if (searchResult.movies.length > 10) {
+            const pageNumber = searchResult.searchParams.page ? searchResult.searchParams.page : 1;
+            let end = pageNumber * 10 - 1;
+            if (end > searchResult.movies.length) end = searchResult.movies.length - 1;
+            const start = pageNumber > 1 ? end - 10 : 1;
+            return searchResult.movies.slice(start, end);
+        }
+
+        return searchResult.movies;
+    }
+    const moviesToDisplay = getMoviesToDisplay();
+
   return (<main>
       <h1>Search Movie</h1>
       {searchResult ?
-          <SearchBar searchMovies={searchMovie}
-                     totalResults={searchResult.totalResults}
-                     searchParams={searchResult.searchParams} />
+          <SearchBar search={search}
+                     getPage={setPage}
+                     totalResults={searchResult.totalResults}/>
           :
-          <SearchBar searchMovies={searchMovie}/>
+          <SearchBar search={search} getPage={setPage}/>
       }
-      {(searchResult && searchResult.movies.length > 0) && <MovieList movieList={searchResult.movies}/>}
+      {moviesToDisplay.length > 0 && <MovieList movieList={moviesToDisplay}/>}
   </main>)
 }
 

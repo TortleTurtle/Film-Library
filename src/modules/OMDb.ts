@@ -71,7 +71,6 @@ export interface OMDbSearchParams {
 
 //responses
 export type OMDbSearchResponse = OMDbSearchSuccess | OMDbSearchFail;
-
 export interface OMDbSearchSuccess {
     Response: "True",
     Search: Movie[],
@@ -81,7 +80,6 @@ export interface OMDbSearchFail {
     Response: "False",
     Error: string,
 }
-//Holy shit narrowing wtf.
 export function isOMDbSearchResponse(res: unknown): res is OMDbSearchResponse {
     return typeof res === "object" && res !== null && "Response" in res && (res.Response === "True" || res.Response === "False");
 }
@@ -131,7 +129,6 @@ export function createSearchQuery(searchParams: OMDbSearchParams) {
     if (searchParams.page) url.searchParams.set("page", searchParams.page.toString());
     return url.toString();
 }
-
 export function buildRequestPagesBundles(searchParams: OMDbSearchParams, amountOfPages: number) {
     //Limit requests if we are developing.
     const maxPages = import.meta.env.MODE === "development" && amountOfPages > 10 ? 10 : amountOfPages;

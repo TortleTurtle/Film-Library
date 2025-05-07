@@ -1,3 +1,7 @@
+export function isNotEmptyString(value: unknown): value is string {
+    return typeof value === "string" && value.trim() !== "";
+}
+
 export function matchSettled<T,R>(
     promise: PromiseSettledResult<T>,
     handlers: {
